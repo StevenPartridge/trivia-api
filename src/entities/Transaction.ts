@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { User } from './User';
 import { TriviaRound } from './TriviaRound';
 
@@ -45,10 +52,10 @@ export class Transaction {
   @UpdateDateColumn()
   updatedAt!: Date;
 
-  @ManyToOne(() => User, user => user.transactions)
+  @ManyToOne(() => User, (user) => user.transactions)
   user!: User;
 
-  @ManyToOne(() => TriviaRound, round => round.transactions)
+  @ManyToOne(() => TriviaRound, (round) => round.transactions)
   round!: TriviaRound;
 
   public isSuccessful(): boolean {

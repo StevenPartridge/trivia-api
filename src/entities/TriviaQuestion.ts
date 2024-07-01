@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity()
 export class TriviaQuestion {
@@ -20,7 +26,7 @@ export class TriviaQuestion {
   @Column({
     type: 'enum',
     enum: ['easy', 'medium', 'hard'],
-    default: 'easy'
+    default: 'easy',
   })
   difficulty!: 'easy' | 'medium' | 'hard';
 
@@ -34,6 +40,8 @@ export class TriviaQuestion {
   updatedAt!: Date;
 
   public getAllAnswers(): string[] {
-    return [this.correct_answer, ...this.wrong_answers].sort(() => Math.random() - 0.5);
+    return [this.correct_answer, ...this.wrong_answers].sort(
+      () => Math.random() - 0.5,
+    );
   }
 }

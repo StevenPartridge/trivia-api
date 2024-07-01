@@ -1,4 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable, CreateDateColumn, UpdateDateColumn, BeforeInsert, BeforeUpdate, Repository, getRepository, Between, In } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  ManyToMany,
+  JoinTable,
+  CreateDateColumn,
+  UpdateDateColumn,
+  BeforeInsert,
+  BeforeUpdate,
+  Repository,
+  getRepository,
+  In,
+} from 'typeorm';
 import { Transaction, TransactionStatus, TransactionType } from './Transaction';
 import { TriviaQuestion } from './TriviaQuestion';
 import { UserAnswer } from './UserAnswer';
@@ -28,7 +42,7 @@ export class TriviaRound {
   @JoinTable()
   questions!: TriviaQuestion[];
 
-  @OneToMany(() => Transaction, transaction => transaction.round)
+  @OneToMany(() => Transaction, (transaction) => transaction.round)
   transactions!: Transaction[];
 
   @CreateDateColumn()
@@ -58,7 +72,9 @@ export class TriviaRound {
   }
 
   // Derived method to get participants
-  public async getParticipants(): Promise<{ wallet_address: string, totalAmount: number }[]> {
+  public async getParticipants(): Promise<
+    { wallet_address: string; totalAmount: number }[]
+  > {
     const transactionRepo: Repository<Transaction> = getRepository(Transaction);
     const transactions = await transactionRepo.find({
       where: {
@@ -69,18 +85,23 @@ export class TriviaRound {
 
     const participantsMap = new Map<string, number>();
 
-    transactions.forEach(tx => {
+    transactions.forEach((tx) => {
       if (participantsMap.has(tx.wallet_address)) {
-        participantsMap.set(tx.wallet_address, participantsMap.get(tx.wallet_address)! + tx.amount);
+        participantsMap.set(
+          tx.wallet_address,
+          participantsMap.get(tx.wallet_address)! + tx.amount,
+        );
       } else {
         participantsMap.set(tx.wallet_address, tx.amount);
       }
     });
 
-    return Array.from(participantsMap.entries()).map(([wallet_address, totalAmount]) => ({
-      wallet_address,
-      totalAmount,
-    }));
+    return Array.from(participantsMap.entries()).map(
+      ([wallet_address, totalAmount]) => ({
+        wallet_address,
+        totalAmount,
+      }),
+    );
   }
 
   public async calculateWinners(): Promise<void> {
@@ -90,17 +111,27 @@ export class TriviaRound {
     const userAnswers = await userAnswerRepo.find({
       where: {
         round_id: this.id,
-        question_id: In(this.questions.map(q => q.id)),
+        question_id: In(this.questions.map((q) => q.id)),
       },
       relations: ['user'],
     });
 
-    const scores = transactions.map(tx => {
-      const userAnswersForTx = userAnswers.filter(ua => ua.wallet_address === tx.wallet_address);
-      const correctAnswers = userAnswersForTx.filter(ua => ua.is_correct).length;
+    const scores = transactions.map((tx) => {
+      const userAnswersForTx = userAnswers.filter(
+        (ua) => ua.wallet_address === tx.wallet_address,
+      );
+      const correctAnswers = userAnswersForTx.filter(
+        (ua) => ua.is_correct,
+      ).length;
       const totalAnswers = userAnswersForTx.length;
       const accuracy = correctAnswers / totalAnswers;
-      const averageAnswerTime = userAnswersForTx.reduce((sum, ua) => sum + (new Date(ua.submitted_at).getTime() - this.start_time.getTime()), 0) / totalAnswers;
+      const averageAnswerTime =
+        userAnswersForTx.reduce(
+          (sum, ua) =>
+            sum +
+            (new Date(ua.submitted_at).getTime() - this.start_time.getTime()),
+          0,
+        ) / totalAnswers;
 
       return {
         wallet_address: tx.wallet_address,
@@ -121,7 +152,12 @@ export class TriviaRound {
       console.log(`Winner: ${winner.wallet_address}, Prize: ${prize}`);
     });
 
-    const remainingPot = totalPot - winners.reduce((sum, winner, index) => sum + totalPot * prizeDistribution[index], 0);
+    const remainingPot =
+      totalPot -
+      winners.reduce(
+        (sum, winner, index) => sum + totalPot * prizeDistribution[index],
+        0,
+      );
     console.log(`Remaining pot: ${remainingPot}`);
   }
 

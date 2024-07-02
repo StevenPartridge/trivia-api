@@ -9,13 +9,14 @@ import {
   UpdateDateColumn,
   BeforeInsert,
   BeforeUpdate,
-  Repository,
-  getRepository,
   In,
 } from 'typeorm';
 import { Transaction, TransactionStatus, TransactionType } from './Transaction';
 import { TriviaQuestion } from './TriviaQuestion';
 import { UserAnswer } from './UserAnswer';
+import { Repository } from 'typeorm';
+import { AppDataSource } from '../ormconfig';
+import { IsEnum, IsNotEmpty, IsDate, IsDecimal } from 'class-validator';
 
 @Entity()
 export class TriviaRound {
@@ -23,12 +24,17 @@ export class TriviaRound {
   id!: number;
 
   @Column()
+  @IsNotEmpty()
+  @IsDate()
   start_time!: Date;
 
   @Column()
+  @IsNotEmpty()
+  @IsDate()
   end_time!: Date;
 
   @Column('decimal', { precision: 18, scale: 8, default: 0 })
+  @IsDecimal()
   pot!: number;
 
   @Column({
@@ -36,6 +42,7 @@ export class TriviaRound {
     enum: ['scheduled', 'active', 'completed'],
     default: 'scheduled',
   })
+  @IsEnum(['scheduled', 'active', 'completed'])
   status!: 'scheduled' | 'active' | 'completed';
 
   @ManyToMany(() => TriviaQuestion)
@@ -59,7 +66,8 @@ export class TriviaRound {
 
   // Custom method to calculate the pot
   public static async calculatePot(round: TriviaRound): Promise<number> {
-    const transactionRepo: Repository<Transaction> = getRepository(Transaction);
+    const transactionRepo: Repository<Transaction> =
+      AppDataSource.getRepository(Transaction);
     const transactions = await transactionRepo.find({
       where: {
         round_id: round.id,
@@ -75,7 +83,8 @@ export class TriviaRound {
   public async getParticipants(): Promise<
     { wallet_address: string; totalAmount: number }[]
   > {
-    const transactionRepo: Repository<Transaction> = getRepository(Transaction);
+    const transactionRepo: Repository<Transaction> =
+      AppDataSource.getRepository(Transaction);
     const transactions = await transactionRepo.find({
       where: {
         round_id: this.id,
@@ -106,7 +115,8 @@ export class TriviaRound {
 
   public async calculateWinners(): Promise<void> {
     const transactions = await this.getParticipants();
-    const userAnswerRepo: Repository<UserAnswer> = getRepository(UserAnswer);
+    const userAnswerRepo: Repository<UserAnswer> =
+      AppDataSource.getRepository(UserAnswer);
 
     const userAnswers = await userAnswerRepo.find({
       where: {

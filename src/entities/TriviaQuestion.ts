@@ -5,6 +5,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import {
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  IsArray,
+  ArrayNotEmpty,
+} from 'class-validator';
 
 @Entity()
 export class TriviaQuestion {
@@ -12,15 +19,20 @@ export class TriviaQuestion {
   id!: number;
 
   @Column('text')
+  @IsNotEmpty()
   question!: string;
 
   @Column('text')
+  @IsNotEmpty()
   correct_answer!: string;
 
   @Column('simple-array')
+  @IsArray()
+  @ArrayNotEmpty()
   wrong_answers!: string[];
 
   @Column('text')
+  @IsNotEmpty()
   category!: string;
 
   @Column({
@@ -28,9 +40,12 @@ export class TriviaQuestion {
     enum: ['easy', 'medium', 'hard'],
     default: 'easy',
   })
+  @IsEnum(['easy', 'medium', 'hard'])
   difficulty!: 'easy' | 'medium' | 'hard';
 
   @Column('simple-array', { nullable: true })
+  @IsOptional()
+  @IsArray()
   tags!: string[];
 
   @CreateDateColumn()

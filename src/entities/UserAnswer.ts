@@ -11,6 +11,13 @@ import {
 import { User } from './User';
 import { TriviaRound } from './TriviaRound';
 import { TriviaQuestion } from './TriviaQuestion';
+import {
+  IsNotEmpty,
+  IsBoolean,
+  IsDate,
+  IsString,
+  IsNumber,
+} from 'class-validator';
 
 @Entity()
 export class UserAnswer {
@@ -18,27 +25,39 @@ export class UserAnswer {
   id!: number;
 
   @Column()
+  @IsNotEmpty()
+  @IsNumber()
   round_id!: number;
 
   @Column()
+  @IsNotEmpty()
+  @IsString()
   wallet_address!: string;
 
   @Column()
+  @IsNotEmpty()
+  @IsNumber()
   question_id!: number;
 
   @Column()
+  @IsNotEmpty()
+  @IsString()
   answer!: string;
 
   @Column({ default: false })
+  @IsBoolean()
   is_correct!: boolean;
 
   @CreateDateColumn()
+  @IsDate()
   submitted_at!: Date;
 
   @CreateDateColumn()
+  @IsDate()
   createdAt!: Date;
 
   @UpdateDateColumn()
+  @IsDate()
   updatedAt!: Date;
 
   @ManyToOne(() => User, (user) => user.transactions)

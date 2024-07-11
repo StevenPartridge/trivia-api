@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-black;
+  }
+  .dark body {
+    @apply bg-gray-900 text-white;
+  }
+  .sepia body {
+    @apply bg-sepia text-sepia-dark;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md text-white;
+  }
+  .btn-primary {
+    @apply bg-blue-500 hover:bg-blue-700;
+  }
+  .btn-secondary {
+    @apply bg-gray-500 hover:bg-gray-700;
+  }
+}

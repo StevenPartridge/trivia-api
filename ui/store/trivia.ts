@@ -1,11 +1,16 @@
 import { defineStore } from 'pinia';
 import type { TriviaQuestion } from '@/models/TriviaQuestion'; // Import the TriviaQuestion interface
+import { TriviaQuestion as Question } from '@/models/TriviaQuestion';
 import type { TriviaRound } from '@/models/TriviaRound'; // Import the TriviaRound interface
+
+import exampleQuestions from './mock_trivia-questions'; // Import the exampleQuestions array
 
 interface TriviaState {
   currentRound: TriviaRound | null;
   questions: TriviaQuestion[];
-  answers: { questionId: number; answer: string }[];
+  answers: { questionId: number; selectedOption: string }[];
+  currentQuestionIndex: number;
+  currentRoundQuestions?: TriviaQuestion[];
 }
 
 export const useTriviaStore = defineStore('trivia', {
@@ -13,6 +18,7 @@ export const useTriviaStore = defineStore('trivia', {
     currentRound: null,
     questions: [],
     answers: [],
+    currentQuestionIndex: 0,
   }),
   actions: {
     async enterRound(roundId: number) {
@@ -43,47 +49,47 @@ export const useTriviaStore = defineStore('trivia', {
           this.status = 'active';
         }
       };
+      console.log('Entered round:', this.currentRound);
+      await this.fetchQuestions(); // Fetch questions when entering a round
     },
     async fetchQuestions() {
       // Mock fetching questions
-      this.questions = [
-        {
-          id: 1,
-          question: 'Sample Question 1?',
-          correct_answer: 'Correct Answer 1',
-          wrong_answers: ['Wrong Answer 1.1', 'Wrong Answer 1.2', 'Wrong Answer 1.3'],
-          category: 'General Knowledge',
-          difficulty: 'easy',
-          tags: ['sample', 'test'],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          getAllAnswers() {
-            return [this.correct_answer, ...this.wrong_answers].sort(() => Math.random() - 0.5);
-          }
-        },
-        {
-          id: 2,
-          question: 'Sample Question 2?',
-          correct_answer: 'Correct Answer 2',
-          wrong_answers: ['Wrong Answer 2.1', 'Wrong Answer 2.2', 'Wrong Answer 2.3'],
-          category: 'Science',
-          difficulty: 'medium',
-          tags: ['science', 'test'],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          getAllAnswers() {
-            return [this.correct_answer, ...this.wrong_answers].sort(() => Math.random() - 0.5);
-          }
-        }
-      ];
+      console.log('Fetching questions...');
+      const fetchedQuestions = exampleQuestions.map(question => new Question(question));
+      this.questions = fetchedQuestions; // Assign to the questions state
+      if (this.currentRound) {
+        this.currentRound.questions = fetchedQuestions; // Also assign to the current round's questions
+      }
     },
     async submitAnswers() {
       // Mock submitting answers
       console.log('Answers submitted:', this.answers);
     },
-    answerQuestion(questionId: number, answer: string) {
-      // Record the answer
-      this.answers.push({ questionId, answer });
+    answerQuestion(questionId: number, selectedOption: string) {
+      const existingAnswerIndex = this.answers.findIndex(answer => answer.questionId === questionId);
+      if (existingAnswerIndex !== -1) {
+        this.answers[existingAnswerIndex].selectedOption = selectedOption;
+      } else {
+        this.answers.push({ questionId, selectedOption });
+      }
+    },
+    nextQuestion() {
+      if (this.currentQuestionIndex < this.questions.length - 1) {
+        this.currentQuestionIndex++;
+      }
+    },
+    prevQuestion() {
+      if (this.currentQuestionIndex > 0) {
+        this.currentQuestionIndex--;
+      }
+    }
+  },
+  getters: {
+    currentRoundQuestions(state): TriviaQuestion[] {
+      return state.currentRound?.questions || [];
+    },
+    currentQuestion(state): TriviaQuestion | null {
+      return state.currentRoundQuestions?.[state.currentQuestionIndex] || null;
     }
   }
 });

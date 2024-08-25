@@ -1,9 +1,27 @@
 import { defineStore } from 'pinia';
-import type { TriviaQuestion } from '@/models/TriviaQuestion'; // Import the TriviaQuestion interface
+import type { TriviaQuestion } from '@/models/TriviaQuestion';
 import { TriviaQuestion as Question } from '@/models/TriviaQuestion';
-import type { TriviaRound } from '@/models/TriviaRound'; // Import the TriviaRound interface
+import type { TriviaRound } from '@/models/TriviaRound';
 
-import exampleQuestions from './mock_trivia-questions'; // Import the exampleQuestions array
+import exampleQuestions from './mock_trivia-questions';
+
+const mockExtras = {
+  async setDerivedFields() {
+    return;
+  },
+  async getParticipants() {
+    return [
+      { wallet_address: '0x1234567890abcdef1234567890abcdef12345678', totalAmount: 50.0 },
+      { wallet_address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef', totalAmount: 50.0 }
+    ];
+  },
+  async calculateWinners() {
+    return;
+  },
+  updateStatus() {
+    return;
+  }
+};
 
 interface TriviaState {
   currentRound: TriviaRound | null;
@@ -11,6 +29,8 @@ interface TriviaState {
   answers: { questionId: number; selectedOption: string }[];
   currentQuestionIndex: number;
   currentRoundQuestions?: TriviaQuestion[];
+  userInTournament: boolean;
+  completedRounds: TriviaRound[]; // Track completed rounds
 }
 
 export const useTriviaStore = defineStore('trivia', {
@@ -19,10 +39,42 @@ export const useTriviaStore = defineStore('trivia', {
     questions: [],
     answers: [],
     currentQuestionIndex: 0,
+    userInTournament: false,
+    completedRounds: [
+      {
+        id: 0,
+        start_time: new Date('2024-07-01T12:00:00Z'),
+        end_time: new Date('2024-07-01T12:30:00Z'),
+        pot: 100.0,
+        status: 'completed',
+        questions: [],
+        transactions: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        numQuestionsAnswered: 10,
+        userPlace: 3,
+        totalEntrants: 50,
+        ...mockExtras
+      },
+      {
+        id: -1,
+        start_time: new Date('2024-07-02T12:00:00Z'),
+        end_time: new Date('2024-07-02T12:30:00Z'),
+        pot: 200.0,
+        status: 'completed',
+        questions: [],
+        transactions: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        numQuestionsAnswered: 8,
+        userPlace: 1,
+        totalEntrants: 40,
+        ...mockExtras,
+      },
+    ],
   }),
   actions: {
     async enterRound(roundId: number) {
-      // Mock entering a round
       this.currentRound = {
         id: roundId,
         start_time: new Date(),
@@ -33,44 +85,49 @@ export const useTriviaStore = defineStore('trivia', {
         transactions: [],
         createdAt: new Date(),
         updatedAt: new Date(),
-        async setDerivedFields() {
-          this.pot = 100.0;
-        },
-        async getParticipants() {
-          return [
-            { wallet_address: '0x1234567890abcdef1234567890abcdef12345678', totalAmount: 50.0 },
-            { wallet_address: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef', totalAmount: 50.0 }
-          ];
-        },
-        async calculateWinners() {
-          console.log('Calculating winners...');
-        },
-        updateStatus() {
-          this.status = 'active';
-        }
+        numQuestionsAnswered: 0,
+        userPlace: 0,
+        totalEntrants: Math.floor(Math.random() * 1000) + 1,
+        ...mockExtras
       };
       console.log('Entered round:', this.currentRound);
-      await this.fetchQuestions(); // Fetch questions when entering a round
+      
+      this.userInTournament = true;
+      await this.fetchQuestions();
     },
     async fetchQuestions() {
-      // Mock fetching questions
-      console.log('Fetching questions...');
       const fetchedQuestions = exampleQuestions.map(question => new Question(question));
-      this.questions = fetchedQuestions; // Assign to the questions state
+      this.questions = fetchedQuestions;
       if (this.currentRound) {
-        this.currentRound.questions = fetchedQuestions; // Also assign to the current round's questions
+        this.currentRound.questions = fetchedQuestions;
+      }
+    },
+    completeRound() {
+      if (this.currentRound) {
+        this.currentRound.status = 'completed';
+        this.completedRounds.push(this.currentRound);
+        this.currentRound = null;
+        this.userInTournament = false;
+        console.log('Round completed and stored:', this.completedRounds);
       }
     },
     async submitAnswers() {
-      // Mock submitting answers
       console.log('Answers submitted:', this.answers);
     },
     answerQuestion(questionId: number, selectedOption: string) {
-      const existingAnswerIndex = this.answers.findIndex(answer => answer.questionId === questionId);
-      if (existingAnswerIndex !== -1) {
-        this.answers[existingAnswerIndex].selectedOption = selectedOption;
-      } else {
+      const question = this.questions.find(q => q.id === questionId);
+      if (!question) return;
+
+      const isCorrect = question.correct_answer === selectedOption;
+
+      if (isCorrect) {
         this.answers.push({ questionId, selectedOption });
+        this.currentRound!.numQuestionsAnswered++;
+        this.nextQuestion();
+      } else {
+        this.currentRound!.userPlace = this.currentRound!.totalEntrants - this.answers.length;
+        console.log(`Incorrect answer. You finished in place ${this.currentRound!.userPlace}`);
+        this.completeRound(); // Eliminate the user immediately
       }
     },
     nextQuestion() {
@@ -90,6 +147,14 @@ export const useTriviaStore = defineStore('trivia', {
     },
     currentQuestion(state): TriviaQuestion | null {
       return state.currentRoundQuestions?.[state.currentQuestionIndex] || null;
+    },
+    nextRoundStartTime(): number {
+      const now = Math.floor(Date.now() / 1000);
+      const nextInterval = Math.ceil(now / 600) * 600;
+      return nextInterval * 1000;
+    },
+    isUserInTournament(state): boolean {
+      return state.userInTournament;
     }
   }
 });

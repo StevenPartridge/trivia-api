@@ -1,14 +1,27 @@
 <template>
   <div class="container mx-auto p-4">
     <h2 class="text-2xl font-bold mb-4">Current Tournament</h2>
-    <div v-if="currentRound < totalRounds">
-      <h3 class="text-xl font-semibold mb-2">Round {{ currentRound + 1 }}</h3>
+    <div v-if="triviaStore.isUserInTournament">
+      <h3 class="text-xl font-semibold mb-2">Round {{ currentRound + 1 }} of {{ totalRounds }}</h3>
       <div v-if="currentQuestion">
         <Question :question="currentQuestion" />
-        <div class="mt-4 flex justify-between">
-          <button v-if="currentQuestionIndex > 0" @click="prevQuestion" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">Previous</button>
-          <button v-if="currentQuestionIndex < questions.length - 1" @click="nextQuestion" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Next</button>
-          <button v-if="currentQuestionIndex === questions.length - 1" @click="submitAnswers" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Submit Answers</button>
+        <div class="mt-4 flex justify-start">
+          <button
+            v-if="currentQuestionIndex < questions.length - 1"
+            @click="nextQuestion"
+            :disabled="!isAnswerSelected"
+            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Next
+          </button>
+          <button
+            v-if="currentQuestionIndex === questions.length - 1"
+            @click="submitAnswers"
+            :disabled="!isAnswerSelected"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Submit Answers
+          </button>
         </div>
       </div>
       <div v-else>
@@ -16,14 +29,14 @@
       </div>
     </div>
     <div v-else>
-      <h3 class="text-xl font-semibold mb-2">Tournament Finished</h3>
+      <h3 class="text-xl font-semibold mb-2">You have been eliminated from the tournament.</h3>
       <p>Thank you for participating!</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useTriviaStore } from '@/store/trivia';
 import Question from '@/components/Question.vue';
 
@@ -39,12 +52,13 @@ const currentQuestion = computed(() => triviaStore.currentQuestion);
 const currentQuestionIndex = computed(() => triviaStore.currentQuestionIndex);
 const questions = computed(() => triviaStore.currentRoundQuestions);
 
+const isAnswerSelected = computed(() => {
+  const questionId = currentQuestion.value?.id;
+  return triviaStore.answers.some(answer => answer.questionId === questionId);
+});
+
 const nextQuestion = () => {
   triviaStore.nextQuestion();
-};
-
-const prevQuestion = () => {
-  triviaStore.prevQuestion();
 };
 
 const submitAnswers = () => {
@@ -54,10 +68,15 @@ const submitAnswers = () => {
     triviaStore.currentQuestionIndex = 0;
   } else {
     console.log('Tournament Finished');
+    navigateTo('/tournament-over');
   }
 };
 </script>
 
 <style scoped>
 /* Add any additional styling if needed */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 </style>
